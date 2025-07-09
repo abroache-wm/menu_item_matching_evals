@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Matching Evaluation</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <style>
+        .instructions ul {
+            margin-left: 20px;
+            padding-left: 0;
+        }
+        .instructions ul ul {
+            margin-left: 30px;
+            margin-top: 5px;
+            margin-bottom: 10px;
+        }
+        .instructions li {
+            margin-bottom: 10px;
+        }
+        .instructions li li {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="welcome-screen" class="screen">
+            <h1>Product Matching Evaluation</h1>
+            <p>This evaluation will test your ability to match a product to the correct menu items from various retailers.</p>
+
+            <div class="instructions" style="text-align: left; margin: 20px 0; padding: 15px; border: 1px solid #eee; border-radius: 5px; background-color: #f9f9f9;">
+                <h4>How to Match:</h4>
+                <p>You will be shown a product from our catalog and asked to identify which menu items from retailers match this product.</p>
+                <ul>
+                    <li>
+                        <strong>Review the Product:</strong> Look at the product details including:
+                        <ul>
+                            <li>Product Name and Brand</li>
+                            <li>Description and Category</li>
+                            <li>Available Regions</li>
+                            <li>Image Text (if available)</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong>Evaluate Menu Items:</strong> For each menu item option, consider:
+                        <ul>
+                            <li><strong>Brand Match:</strong> Does the menu item brand match the product brand?</li>
+                            <li><strong>Product Match:</strong> Does the menu item name/description represent the same product?</li>
+                            <li><strong>Variant Match:</strong> Do the specific details (weight, potency, count, etc.) match?</li>
+                            <li><strong>Region Compatibility:</strong> Is the menu item from a region where the product is available?</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong>Select Matches:</strong> Choose ALL menu items that match the given product. You can select multiple items if they all represent the same product in different regions or with equivalent details.
+                    </li>
+                    <li>
+                        <strong>None of the Above:</strong> If no menu items match the product, select "None of the above" as your only choice.
+                    </li>
+                </ul>
+            </div>
+
+            <div class="form-group">
+                <label for="user-name">Your Name:</label>
+                <input type="text" id="user-name" required>
+            </div>
+
+            <div class="form-group">
+                <label for="user-email">Your Email:</label>
+                <input type="email" id="user-email" required>
+            </div>
+
+            <button id="start-button">Start Evaluation</button>
+
+            <div class="form-group mt-20">
+                <button id="start-new-button" class="secondary-button">Start New Session</button>
+                <p class="text-small">Use this if you want to clear your saved progress and start over.</p>
+            </div>
+        </div>
+
+        <div id="quiz-screen" class="screen hidden">
+            <div class="header">
+                <div class="progress">
+                    Question <span id="current-question">1</span> of <span id="total-questions">10</span>
+
+                    <div class="skip-container">
+                        <label for="skip-question">Skip to question:</label>
+                        <input type="number" id="skip-question" min="1" class="skip-input">
+                        <button id="skip-button" class="skip-button">Go</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="product-item" class="menu-item-card">
+                <h2>Product to Match:</h2>
+                <div id="product-item-details"></div>
+            </div>
+
+            <div id="task" class="task-container">
+                <h3>SELECT ALL menu items that match this product</h3>
+                <p>Choose all menu items that represent the same product with matching details and region compatibility.</p>
+                <div id="menu-options" class="options-container"></div>
+            </div>
+
+            <div id="notes-section" class="task-container">
+                <h3>Notes (Optional)</h3>
+                <p>Add any relevant notes for this question below.</p>
+                <textarea id="notes-input" rows="4" style="width: 95%; margin-top: 10px;" placeholder="Enter your notes here..."></textarea>
+            </div>
+
+            <div class="navigation">
+                <button id="prev-button" class="nav-button">Previous Question</button>
+                <button id="save-button" class="nav-button">Save & Continue</button>
+                <button id="export-csv-button" class="nav-button">Save & Export CSV</button>
+                <button id="next-button" class="nav-button">Next Question</button>
+            </div>
+        </div>
+
+        <div id="results-screen" class="screen hidden">
+            <h1>Evaluation Complete!</h1>
+
+            <div class="score-container">
+                <h2>Your Responses Have Been Recorded</h2>
+                <p>Thank you for completing the evaluation. Your responses will be used as an answer key for future evaluations.</p>
+            </div>
+
+            <button id="download-results" class="primary-button">Download Answer Key</button>
+            <button id="restart-button" class="secondary-button">Start Over</button>
+        </div>
+    </div>
+
+    <script src="quiz.js"></script>
+</body>
+</html>
