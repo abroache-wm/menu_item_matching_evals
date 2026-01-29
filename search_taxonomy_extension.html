@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Search Event Taxonomy - Device Breakout</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tableau-extensions-api/1.12.0/tableau.extensions.1.12.0.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: #f7f7f7;
+      color: #1a1a1a;
+      padding: 24px;
+    }
+
+    h1 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #1a1a1a;
+    }
+
+    .subtitle {
+      font-size: 11px;
+      color: #666;
+      margin-bottom: 12px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      font-size: 14px;
+      color: #666;
+    }
+
+    .error {
+      background: #fee;
+      border: 1px solid #c00;
+      color: #c00;
+      padding: 16px;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+
+    /* Filter Controls */
+    .filter-bar {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .filter-group {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .filter-label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: #666;
+    }
+
+    .filter-btn {
+      padding: 6px 12px;
+      font-size: 10px;
+      font-weight: 600;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      background: #fff;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .filter-btn:hover {
+      border-color: #999;
+    }
+
+    .filter-btn.active {
+      background: #1a1a1a;
+      color: #fff;
+      border-color: #1a1a1a;
+    }
+
+    .filter-btn.global-btn.active { background: #00cdbe; border-color: #00cdbe; color: #1a1a1a; }
+    .filter-btn.navigation-btn.active { background: #f5a623; border-color: #f5a623; color: #1a1a1a; }
+    .filter-btn.specific-btn.active { background: #888; border-color: #888; color: #fff; }
+
+    .section {
+      background: #fff;
+      border: 2px solid #1a1a1a;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+
+    .section.hidden {
+      display: none;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .section-label {
+      font-size: 9px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 4px 10px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .section-desc {
+      font-size: 10px;
+      color: #666;
+    }
+
+    .global .section-label { background: #00cdbe; color: #1a1a1a; }
+    .global { border-color: #00cdbe; }
+
+    .navigation .section-label { background: #f5a623; color: #1a1a1a; }
+    .navigation { border-color: #f5a623; }
+
+    .specific .section-label { background: #888; color: #fff; }
+    .specific { border-color: #888; }
+
+    /* Device Tables */
+    .device-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .device-card {
+      background: #fafafa;
+      border-radius: 8px;
+      padding: 12px;
+      border: 1px solid #e0e0e0;
+    }
+
+    .device-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #ddd;
+    }
+
+    .device-name {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .device-users {
+      font-size: 9px;
+      color: #666;
+    }
+
+    .device-users .engaged {
+      font-weight: 700;
+      color: #1976d2;
+    }
+
+    .device-users .total {
+      color: #888;
+    }
+
+    .global .device-header { border-bottom-color: #00cdbe; }
+    .navigation .device-header { border-bottom-color: #f5a623; }
+    .specific .device-header { border-bottom-color: #888; }
+
+    /* Metric Table */
+    .metric-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 9px;
+    }
+
+    .metric-table th {
+      text-align: left;
+      padding: 4px 3px;
+      font-size: 7px;
+      font-weight: 600;
+      color: #888;
+      text-transform: uppercase;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .metric-table th:not(:first-child) {
+      text-align: right;
+    }
+
+    .metric-table td {
+      padding: 4px 3px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .metric-table td:not(:first-child) {
+      text-align: right;
+      font-family: 'SF Mono', Monaco, monospace;
+      font-size: 8px;
+    }
+
+    .metric-table .outcome {
+      font-weight: 500;
+      color: #333;
+    }
+
+    .metric-table .events {
+      font-weight: 700;
+      color: #1a1a1a;
+    }
+
+    .metric-table .users {
+      color: #1976d2;
+      font-weight: 600;
+    }
+
+    .metric-table .util { color: #1976d2; font-weight: 600; }
+    .metric-table .int { color: #7c3aed; font-weight: 600; }
+
+    .metric-table .total-row {
+      font-weight: 700;
+      border-top: 2px solid #ccc;
+      background: #f5f5f5;
+    }
+
+    .na { color: #ccc; }
+
+    /* Footer */
+    .footer {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .legend {
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 9px;
+      line-height: 1.8;
+    }
+
+    .legend strong {
+      color: #333;
+    }
+
+    .legend .util { color: #1976d2; }
+    .legend .int { color: #7c3aed; }
+
+    .users-card {
+      background: #e8f4fc;
+      border: 1px solid #90caf9;
+      border-radius: 8px;
+      padding: 12px;
+    }
+
+    .users-card strong {
+      font-size: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #333;
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    .users-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .user-stat {
+      text-align: center;
+      padding: 6px;
+      background: rgba(255,255,255,0.7);
+      border-radius: 4px;
+    }
+
+    .user-stat .device {
+      font-size: 8px;
+      color: #666;
+    }
+
+    .user-stat .count {
+      font-size: 12px;
+      font-weight: 700;
+      color: #1565c0;
+      font-family: 'SF Mono', Monaco, monospace;
+    }
+
+    .data-status {
+      background: #e8f5e9;
+      border: 1px solid #4caf50;
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 10px;
+      font-weight: 600;
+      color: #2e7d32;
+    }
+
+    .config-panel {
+      background: #fff;
+      border: 2px solid #1976d2;
+      border-radius: 12px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+
+    .config-panel h2 {
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+
+    .config-panel select {
+      padding: 8px 12px;
+      font-size: 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      min-width: 200px;
+    }
+
+    .config-panel button {
+      padding: 8px 16px;
+      font-size: 12px;
+      background: #1976d2;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-left: 8px;
+    }
+
+    .config-panel button:hover {
+      background: #1565c0;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="loading">Loading Tableau Extension...</div>
+  </div>
+
+  <script>
+    // Data structure to hold parsed data
+    let dashboardData = {
+      devices: ['Desktop', 'mWeb', 'iOS', 'Android'],
+      buckets: {
+        'GLOBAL_SEARCH': { label: 'Search', title: 'Global Search', desc: 'User typed a query', class: 'global' },
+        'NAVIGATION_SEARCH': { label: 'Navigation', title: 'Navigation Search', desc: 'No query typed — search bar used as navigation shortcut', class: 'navigation' },
+        'SPECIFIC_SEARCH': { label: 'Surface-Specific', title: 'Specific Search', desc: 'Search-adjacent functionalities', class: 'specific' }
+      },
+      totalUsers: {},
+      metrics: {}
+    };
+
+    // Format numbers
+    function formatNumber(num) {
+      if (num >= 1000000) return (num / 1000000).toFixed(2) + 'M';
+      if (num >= 1000) return (num / 1000).toFixed(0) + 'K';
+      return num.toString();
+    }
+
+    function formatPercent(num) {
+      return num.toFixed(2) + '%';
+    }
+
+    function formatIntensity(num) {
+      return num.toFixed(1);
+    }
+
+    // Parse Tableau data into our structure
+    function parseTableauData(data) {
+      const columns = data.columns;
+      const rows = data.data;
+
+      // Find column indices - normalize names (lowercase, remove spaces/underscores)
+      const colIndex = {};
+      columns.forEach((col, idx) => {
+        const normalized = col.fieldName.toLowerCase().replace(/[\s_-]/g, '');
+        colIndex[normalized] = idx;
+      });
+
+      // Map expected names to normalized versions
+      const getCol = (name) => {
+        const normalized = name.toLowerCase().replace(/[\s_-]/g, '');
+        return colIndex[normalized];
+      };
+
+      // Reset metrics
+      dashboardData.metrics = {};
+      dashboardData.totalUsers = {};
+
+      rows.forEach(row => {
+        const device = row[getCol('device')]?.value || '';
+        const bucket = row[getCol('search_bucket')]?.value || '';
+        const outcome = row[getCol('outcome_type')]?.value || '';
+        const eventCount = parseFloat(row[getCol('event_count')]?.value) || 0;
+        const uniqueUsers = parseFloat(row[getCol('unique_users')]?.value) || 0;
+        const totalUsers = parseFloat(row[getCol('total_users')]?.value) || 0;
+        const pctEngaged = parseFloat(row[getCol('pct_users_engaged')]?.value) || 0;
+        const intensity = parseFloat(row[getCol('intensity')]?.value) || 0;
+
+        // Store total users per device
+        if (!dashboardData.totalUsers[device]) {
+          dashboardData.totalUsers[device] = totalUsers;
+        }
+
+        // Build metrics structure
+        const key = `${device}|${bucket}`;
+        if (!dashboardData.metrics[key]) {
+          dashboardData.metrics[key] = {
+            device,
+            bucket,
+            outcomes: [],
+            totalEvents: 0,
+            totalUsers: 0
+          };
+        }
+
+        dashboardData.metrics[key].outcomes.push({
+          outcome,
+          eventCount,
+          uniqueUsers,
+          pctEngaged,
+          intensity
+        });
+        dashboardData.metrics[key].totalEvents += eventCount;
+        dashboardData.metrics[key].totalUsers += uniqueUsers;
+      });
+
+      // Sort outcomes by event count
+      Object.values(dashboardData.metrics).forEach(m => {
+        m.outcomes.sort((a, b) => b.eventCount - a.eventCount);
+      });
+    }
+
+    // Render the dashboard
+    function renderDashboard() {
+      const app = document.getElementById('app');
+
+      let html = `
+        <h1>Search Event Taxonomy — Device Breakout</h1>
+        <div class="subtitle">Desktop vs mWeb vs iOS vs Android</div>
+
+        <div class="filter-bar">
+          <div class="filter-group">
+            <span class="filter-label">Bucket:</span>
+            <button class="filter-btn active" data-filter="all" onclick="filterBuckets('all')">All</button>
+            <button class="filter-btn global-btn" data-filter="global" onclick="filterBuckets('global')">Global Search</button>
+            <button class="filter-btn navigation-btn" data-filter="navigation" onclick="filterBuckets('navigation')">Navigation</button>
+            <button class="filter-btn specific-btn" data-filter="specific" onclick="filterBuckets('specific')">Specific</button>
+          </div>
+          <div class="data-status">Live from Tableau</div>
+        </div>
+      `;
+
+      // Render each bucket section
+      ['GLOBAL_SEARCH', 'NAVIGATION_SEARCH', 'SPECIFIC_SEARCH'].forEach(bucketKey => {
+        const bucketInfo = dashboardData.buckets[bucketKey];
+
+        html += `
+          <div class="section ${bucketInfo.class}" data-bucket="${bucketInfo.class}">
+            <div class="section-header">
+              <div class="section-label">${bucketInfo.label}</div>
+              <div>
+                <div class="section-title">${bucketInfo.title}</div>
+                <div class="section-desc">${bucketInfo.desc}</div>
+              </div>
+            </div>
+            <div class="device-grid">
+        `;
+
+        // Render each device card
+        dashboardData.devices.forEach(device => {
+          const key = `${device}|${bucketKey}`;
+          const data = dashboardData.metrics[key];
+          const totalDeviceUsers = dashboardData.totalUsers[device] || 0;
+
+          html += `
+            <div class="device-card">
+              <div class="device-header">
+                <span class="device-name">${device}</span>
+                <span class="device-users">
+                  <span class="engaged">${data ? formatNumber(data.totalUsers) : '-'}</span>/<span class="total">${formatNumber(totalDeviceUsers)}</span>
+                </span>
+              </div>
+              <table class="metric-table">
+                <thead>
+                  <tr><th>Outcome</th><th>Events</th><th>Users</th><th>%Engaged</th><th>Per User</th></tr>
+                </thead>
+                <tbody>
+          `;
+
+          if (data && data.outcomes.length > 0) {
+            data.outcomes.forEach(o => {
+              html += `
+                <tr>
+                  <td class="outcome">${o.outcome}</td>
+                  <td class="events">${formatNumber(o.eventCount)}</td>
+                  <td class="users">${formatNumber(o.uniqueUsers)}</td>
+                  <td class="util">${formatPercent(o.pctEngaged)}</td>
+                  <td class="int">${formatIntensity(o.intensity)}</td>
+                </tr>
+              `;
+            });
+
+            html += `
+              <tr class="total-row">
+                <td class="outcome">TOTAL</td>
+                <td class="events">${formatNumber(data.totalEvents)}</td>
+                <td class="users">${formatNumber(data.totalUsers)}</td>
+                <td>-</td>
+                <td>-</td>
+              </tr>
+            `;
+          } else {
+            html += `<tr><td colspan="5" class="na" style="text-align:center;">No data</td></tr>`;
+          }
+
+          html += `
+                </tbody>
+              </table>
+            </div>
+          `;
+        });
+
+        html += `
+            </div>
+          </div>
+        `;
+      });
+
+      // Footer
+      html += `
+        <div class="footer">
+          <div class="legend">
+            <strong>Metric Definitions</strong><br>
+            <strong>Events</strong> = gross event count<br>
+            <span class="util"><strong>Users</strong></span> = distinct users who performed this action<br>
+            <span class="util"><strong>%Engaged</strong></span> = % of device users who engaged with this outcome<br>
+            <span class="int"><strong>Per User</strong></span> = events per engaged user — high values indicate power users
+          </div>
+
+          <div class="users-card">
+            <strong>Total Users by Device (Current Period)</strong>
+            <div class="users-grid">
+              ${dashboardData.devices.map(d => `
+                <div class="user-stat">
+                  <div class="device">${d}</div>
+                  <div class="count">${formatNumber(dashboardData.totalUsers[d] || 0)}</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+
+      app.innerHTML = html;
+    }
+
+    // Filter function
+    window.filterBuckets = function(filter) {
+      document.querySelectorAll('.filter-group:first-child .filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.filter === filter) {
+          btn.classList.add('active');
+        }
+      });
+
+      document.querySelectorAll('.section').forEach(section => {
+        if (filter === 'all') {
+          section.classList.remove('hidden');
+        } else {
+          if (section.dataset.bucket === filter) {
+            section.classList.remove('hidden');
+          } else {
+            section.classList.add('hidden');
+          }
+        }
+      });
+    };
+
+    // Show configuration panel
+    function showConfigPanel(worksheets) {
+      const app = document.getElementById('app');
+
+      let options = worksheets.map(w => `<option value="${w.name}">${w.name}</option>`).join('');
+
+      app.innerHTML = `
+        <h1>Search Event Taxonomy — Device Breakout</h1>
+        <div class="subtitle">Configure Data Source</div>
+
+        <div class="config-panel">
+          <h2>Select Worksheet</h2>
+          <p style="font-size: 11px; color: #666; margin-bottom: 12px;">
+            Choose the worksheet containing your search taxonomy data.<br>
+            Expected columns: device, search_bucket, outcome_type, event_count, unique_users, total_users, pct_users_engaged, intensity
+          </p>
+          <select id="worksheetSelect">
+            ${options}
+          </select>
+          <button onclick="connectWorksheet()">Connect</button>
+        </div>
+      `;
+    }
+
+    // Connect to selected worksheet
+    window.connectWorksheet = function() {
+      const worksheetName = document.getElementById('worksheetSelect').value;
+      const dashboard = tableau.extensions.dashboardContent.dashboard;
+      const worksheet = dashboard.worksheets.find(w => w.name === worksheetName);
+
+      if (worksheet) {
+        // Save selection
+        tableau.extensions.settings.set('worksheet', worksheetName);
+        tableau.extensions.settings.saveAsync().then(() => {
+          loadDataFromWorksheet(worksheet);
+        });
+      }
+    };
+
+    // Load data from worksheet
+    function loadDataFromWorksheet(worksheet) {
+      const app = document.getElementById('app');
+      app.innerHTML = '<div class="loading">Loading data from Tableau...</div>';
+
+      worksheet.getSummaryDataAsync().then(data => {
+        // Debug: show what we got
+        const columns = data.columns.map(c => c.fieldName).join(', ');
+        const rowCount = data.data.length;
+        const firstRow = data.data[0] ? JSON.stringify(data.data[0].map(cell => cell.value)) : 'no rows';
+
+        console.log('Columns:', columns);
+        console.log('Row count:', rowCount);
+        console.log('First row:', firstRow);
+
+        app.innerHTML = `<div class="loading">
+          <strong>Debug Info:</strong><br>
+          Columns: ${columns}<br>
+          Rows: ${rowCount}<br>
+          First row: ${firstRow}
+        </div>`;
+
+        // Wait 3 seconds so we can see debug info, then render
+        setTimeout(() => {
+          parseTableauData(data);
+          renderDashboard();
+        }, 3000);
+
+        // Set up listener for data changes
+        worksheet.addEventListener(tableau.TableauEventType.SummaryDataChanged, () => {
+          worksheet.getSummaryDataAsync().then(newData => {
+            parseTableauData(newData);
+            renderDashboard();
+          });
+        });
+      }).catch(err => {
+        app.innerHTML = `<div class="error">Error loading data: ${err.message}</div>`;
+      });
+    }
+
+    // Initialize extension
+    tableau.extensions.initializeAsync().then(() => {
+      const app = document.getElementById('app');
+      app.innerHTML = '<div class="loading">Tableau connected. Finding worksheets...</div>';
+
+      const dashboard = tableau.extensions.dashboardContent.dashboard;
+      const worksheets = dashboard.worksheets;
+
+      app.innerHTML = `<div class="loading">Found ${worksheets.length} worksheet(s): ${worksheets.map(w => w.name).join(', ') || 'none'}</div>`;
+
+      if (worksheets.length === 0) {
+        app.innerHTML = `
+          <div class="error">
+            <strong>No worksheets found on this dashboard</strong><br><br>
+            Drag a worksheet onto this dashboard first. The worksheet should contain these columns:<br>
+            device, search_bucket, outcome_type, event_count, unique_users, total_users, pct_users_engaged, intensity
+          </div>
+        `;
+        return;
+      }
+
+      // Check if we have a saved worksheet selection
+      const savedWorksheet = tableau.extensions.settings.get('worksheet');
+
+      if (savedWorksheet) {
+        const worksheet = worksheets.find(w => w.name === savedWorksheet);
+        if (worksheet) {
+          loadDataFromWorksheet(worksheet);
+          return;
+        }
+      }
+
+      // Auto-connect if only one worksheet, otherwise show picker
+      if (worksheets.length === 1) {
+        loadDataFromWorksheet(worksheets[0]);
+      } else {
+        showConfigPanel(worksheets);
+      }
+
+    }).catch(err => {
+      document.getElementById('app').innerHTML = `
+        <div class="error">
+          <strong>Tableau Extension Error</strong><br>
+          ${err.message}<br><br>
+          Make sure you're running this as a Tableau Dashboard Extension.
+        </div>
+      `;
+    });
+  </script>
+</body>
+</html>
